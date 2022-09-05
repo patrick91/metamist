@@ -1,11 +1,8 @@
-import json
-from datetime import date
 from typing import Optional, List, Union, Dict, Any
-
-from pydantic import BaseModel
+import json
 
 from models.base import SMBase
-from models.enums import AnalysisType, AnalysisStatus, SequenceType
+from models.enums import AnalysisType, AnalysisStatus
 
 
 class Analysis(SMBase):
@@ -48,25 +45,3 @@ class Analysis(SMBase):
             meta=meta,
             active=bool(kwargs.get('active')),
         )
-
-
-class DateSizeModel(BaseModel):
-    """Date Size model"""
-
-    start: date
-    end: date | None
-    size: dict[SequenceType, int]
-
-
-class SampleSizeModel(BaseModel):
-    """Project Size model"""
-
-    sample: str
-    dates: list[DateSizeModel]
-
-
-class ProjectSizeModel(BaseModel):
-    """Project Size model"""
-
-    project: str
-    samples: list[SampleSizeModel]
