@@ -5,6 +5,8 @@
 Postgres:
 
 - Database
-    - has many Schemas
-        - has manyTables
-    - has datatypes, functions, and operators
+  - has many Schemas
+    - has manyTables
+  - has datatypes, functions, and operators
+
+Sorry ignore this
