@@ -1,0 +1,40 @@
+#motion-demo {
+    /* offset-path: path(
+        "M 600 800 C 625 700 725 700 750 800 S 875 900 900 800 C 925 700 1025 700 1050 800 S 1175 900 1200 800"
+    ); */
+    /* offset-path: path(
+        "M0,32L21.8,64C43.6,96,87,160,131,192C174.5,224,218,224,262,192C305.5,160,349,96,393,58.7C436.4,21,480,11,524,48C567.3,85,611,171,655,192C698.2,213,742,171,785,154.7C829.1,139,873,149,916,165.3C960,181,1004,203,1047,192C1090.9,181,1135,139,1178,112C1221.8,85,1265,75,1309,90.7C1352.7,107,1396,149,1418,170.7L1440,192"
+    ); */
+    /* offset-path:  */
+    animation: move 8s linear infinite;
+    position: absolute;
+    offset-rotate: 0deg;
+    offset-anchor: 100%;
+}
+
+@keyframes move {
+    0% {
+        /* offset-distance: 0%; */
+        /* transform: translateX(-100%); */
+        left: 0%;
+    }
+    100% {
+        /* offset-distance: 100%; */
+        /* transform: translateX(310%); */
+        left: 100%;
+    }
+}
+
+#duckPath {
+    stroke-dasharray: 1750;
+    stroke-dashoffset: 1750;
+    /* stroke-dasharray: 100; */
+    /* stroke-dashoffset: 2000; */
+    animation: dash 15s infinite ease-in-out;
+}
+
+@keyframes dash {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
