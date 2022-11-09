@@ -80,6 +80,22 @@ def main(
             sequences = []
             sample_id_index += random.randint(1, 4)
             for _ in range(generate_random_number_within_distribution()):
+                meta={
+                    'facility': random.choice(
+                        [
+                            'Amazing sequence centre',
+                            'Sequence central',
+                            'Dept of Seq.',
+                        ]
+                    ),
+                    'emoji': random.choice(EMOJIS),
+                    'technology': random.choice(
+                        ['magnifying glass', 'guessing', 'math.random']
+                    ),
+                    'coverage': f'{random.choice([30, 90, 300, 9000, "?"])}x',
+                }
+                if random.random() < 0.8: #don't always create a batch meta field
+                    meta['batch'] = f'M00{random.choice([1,2,3,4,5])}' if random.random() < 0.8 else None #sometimes make the field empty
                 sequences.append(
                     SequenceUpsert(
                         status=SequenceStatus('uploaded'),
@@ -92,20 +108,7 @@ def main(
                                 )
                             )
                         ),
-                        meta={
-                            'facility': random.choice(
-                                [
-                                    'Amazing sequence centre',
-                                    'Sequence central',
-                                    'Dept of Seq.',
-                                ]
-                            ),
-                            'emoji': random.choice(EMOJIS),
-                            'technology': random.choice(
-                                ['magnifying glass', 'guessing', 'math.random']
-                            ),
-                            'coverage': f'{random.choice([30, 90, 300, 9000, "?"])}x',
-                        },
+                        meta=meta
                     )
                 )
 
