@@ -1,0 +1,18 @@
+#Family	Individual ID	Paternal ID	Maternal ID	Sex	Affected
+WEASLEY	Arthur			1	1
+WEASLEY	Molly			2	2
+WEASLEY	Bill	Arthur	Molly	1	1
+WEASLEY	Charlie	Arthur	Molly	1	2
+WEASLEY	Percy	Arthur	Molly	1	1
+WEASLEY	Fred	Arthur	Molly	1	2
+WEASLEY	George	Arthur	Molly	1	1
+WEASLEY	Ron	Arthur	Molly	1	2
+WEASLEY	Ginny	Arthur	Molly	2	1
+POTTER	James			1	2
+POTTER	Lily			2	1
+POTTER	Harry	James	Lily	1	2
+GRANGER	Hermoine			2	1
+BLACK	Mr-Black			1	2
+BLACK	Mrs-Black			2	1
+BLACK	Sirius	Mr-Black	Mrs-Black	1	2
+BLACK	Regulus	Mr-Black	Mrs-Black	1	1
