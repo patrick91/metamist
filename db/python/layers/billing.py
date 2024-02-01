@@ -213,9 +213,12 @@ class BillingLayer(BqBaseLayer):
             start_day,
             end_day,
             batches,
-        ) = await ar_batch_lookup_table.get_batches_by_ar_guid(ar_guid)
+        ) = await ar_batch_lookup_table.get_batches_by_ar_guid(
+            ar_guid, limit_to_hail_batches=False
+        )
 
-        if not batches:
+        if not start_day:
+            # ar-guid job is not found
             return BillingHailBatchCostRecord(
                 ar_guid=ar_guid,
                 batch_ids=[],
@@ -232,7 +235,6 @@ class BillingLayer(BqBaseLayer):
             end_date=end_day.strftime('%Y-%m-%d'),
             filters={
                 BillingColumn.LABELS: {
-                    'batch_id': batches,
                     'ar-guid': ar_guid,
                 }
             },
@@ -240,10 +242,14 @@ class BillingLayer(BqBaseLayer):
             group_by=False,
             time_column=BillingTimeColumn.USAGE_END_TIME,
             time_periods=BillingTimePeriods.DAY,
+            # cromwell jobs specifically can have a lot of 0 cost items,
+            # so we want to exclude them
+            min_cost=0 if not batches else None,
         )
 
         billing_table = self.table_factory(query.source, query.fields)
         records = await billing_table.get_total_cost(query)
+        print(records)
         return BillingHailBatchCostRecord(
             ar_guid=ar_guid,
             batch_ids=batches,

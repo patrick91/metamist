@@ -6,6 +6,7 @@ import SearchIcon from '@mui/icons-material/Search'
 import LoadingDucks from '../../shared/components/LoadingDucks/LoadingDucks'
 import { BillingApi, BillingTotalCostRecord } from '../../sm-api'
 import HailBatchGrid from './components/HailBatchGrid'
+import CromwellDataProcGrid from './components/CromwellDataProcGrid'
 import { getMonthStartDate } from '../../shared/utilities/monthStartEndDate'
 import generateUrl from '../../shared/utilities/generateUrl'
 
@@ -191,23 +192,40 @@ const BillingCostByAnalysis: React.FunctionComponent = () => {
                 <br />
                 Try these examples:
                 <br />
-                Ar guid: f5a065d2-c51f-46b7-a920-a89b639fc4ba
+                Search By Ar guid:
+                <br />
+                f5a065d2-c51f-46b7-a920-a89b639fc4ba (HailBatch)
+                <br />
+                dfdd532e-b12b-4f3a-af96-6e1163b28941 (Cromwell) b8ccaec8-423c-4299-953e-5b24157e47cd
+                huge cromwell job with seq groups
+                <br />
+                f1ab510c-d63c-41a9-8018-51b64806abca (Dataproc)
+                <br />
                 <br />
                 Batch id: 430604, 430605
             </p>
         </Card>
     )
 
-    const gridCard = (gridData: BillingTotalCostRecord[]) => (
+    const gridHailBatchCard = (gridData: BillingTotalCostRecord[]) => (
         <Card fluid style={{ padding: '20px', overflowX: 'scroll' }} id="billing-container-data">
             <HailBatchGrid data={gridData} />
+        </Card>
+    )
+
+    const gridCromwellCard = (gridData: BillingTotalCostRecord[]) => (
+        <Card fluid style={{ padding: '20px', overflowX: 'scroll' }} id="billing-container-data">
+            <CromwellDataProcGrid data={gridData} />
         </Card>
     )
 
     const dataComponent = () => {
         if (data !== undefined && data.costs.length > 0) {
             // only render grid if there are available cost data
-            return gridCard(data.costs)
+            if (data.batch_ids !== undefined && data.batch_ids.length > 0) {
+                return gridHailBatchCard(data.costs)
+            }
+            return gridCromwellCard(data.costs)
         }
 
         // if valid search text and no data return return No data message

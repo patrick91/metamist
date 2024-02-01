@@ -109,6 +109,9 @@ class BillingBaseTable(BqDbBase):
         else:
             job_config = bigquery.QueryJobConfig(labels=BQ_LABELS)
 
+        print(query)
+        print(params)
+
         if results_as_list:
             return list(
                 self._connection.connection.query(query, job_config=job_config).result()
@@ -572,7 +575,7 @@ class BillingBaseTable(BqDbBase):
         """
 
         # append min cost condition
-        if query.min_cost:
+        if query.min_cost is not None:
             _query += ' WHERE cost > @min_cost'
             query_parameters.append(
                 bigquery.ScalarQueryParameter('min_cost', 'FLOAT64', query.min_cost)

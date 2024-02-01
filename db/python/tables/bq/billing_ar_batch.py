@@ -16,11 +16,15 @@ class BillingArBatchTable(BillingBaseTable):
         return self.table_name
 
     async def get_batches_by_ar_guid(
-        self, ar_guid: str
+        self, ar_guid: str, limit_to_hail_batches: bool = True
     ) -> tuple[datetime, datetime, list[str]]:
         """
         Get batches for given ar_guid
+        Only Hail batch contains batch_id,
+        cromwell batch does not have batch_id, only ar_guid
         """
+        cond = 'AND batch_id IS NOT NULL' if limit_to_hail_batches else ''
+
         _query = f"""
         SELECT
             batch_id,
@@ -28,7 +32,7 @@ class BillingArBatchTable(BillingBaseTable):
             MAX(max_day) as end_day
         FROM `{self.table_name}`
         WHERE ar_guid = @ar_guid
-        AND batch_id IS NOT NULL
+        {cond}
         GROUP BY batch_id
         ORDER BY batch_id;
         """
@@ -41,7 +45,11 @@ class BillingArBatchTable(BillingBaseTable):
         if query_job_result:
             start_day = min((row.start_day for row in query_job_result))
             end_day = max((row.end_day for row in query_job_result)) + timedelta(days=1)
-            return start_day, end_day, [row.batch_id for row in query_job_result]
+            return (
+                start_day,
+                end_day,
+                [row.batch_id for row in query_job_result if row.batch_id],
+            )
 
         # return empty list if no record found
         return None, None, []

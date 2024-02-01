@@ -13,224 +13,128 @@ interface Field {
     dataMap?: (data: any, value: string) => any
 }
 
-const HailBatchGrid: React.FunctionComponent<{
+function setFieldValue(field: string, value: any, rec: any) {
+    // set field value if not undefined
+    if (value !== undefined) {
+        rec[field] = value
+    }
+}
+
+function prepareTotalRow(data: any[], key: string) {
+    // aggregate data by key
+    console.log(data)
+    const aggData: any[] = []
+    data.forEach((curr) => {
+        const { cost, topic, usage_start_time, usage_end_time, creator } = curr
+        const usageStartDate = new Date(usage_start_time)
+        const usageEndDate = new Date(usage_end_time)
+        const ar_guid = curr['ar-guid']
+        const cromwell_id = curr['cromwell-workflow-id']
+        const goog_pipelines_worker = curr['goog-pipelines-worker']
+        const compute_category = curr['compute-category']
+        // specific for datproc jobs
+        const dataproc_autozone = curr['goog-dataproc-autozone']
+        const dataproc_name = curr['goog-dataproc-cluster-name']
+        const dataproc_uuid = curr['goog-dataproc-cluster-uuid']
+        const dataproc_location = curr['goog-dataproc-location']
+
+        const idx = aggData.findIndex((d) => d.key === curr[key])
+        if (curr[key] !== undefined && cost >= 0) {
+            // do not include credits, should be filter out at API?
+            if (idx === -1) {
+                const rec = {
+                    type: key,
+                    key: curr[key],
+                    ar_guid,
+                    compute_category,
+                    topic,
+                    cost,
+                    start_time: usageStartDate,
+                    end_time: usageEndDate,
+                    wdl_task_name: key === 'wdl-task-name' ? curr[key] : undefined,
+                    cromwell_sub: key === 'cromwell-sub-workflow-name' ? curr[key] : undefined,
+                    seq_group_id: key === 'seq_group_id' ? curr[key] : undefined,
+                }
+
+                // append specific fields for dataproc jobs / cromwell jobs
+                setFieldValue('goog_pipelines_worker', goog_pipelines_worker, rec)
+                setFieldValue('cromwell_id', cromwell_id, rec)
+                setFieldValue('creator', creator, rec)
+                setFieldValue('dataproc_autozone', dataproc_autozone, rec)
+                setFieldValue('dataproc_name', dataproc_name, rec)
+                setFieldValue('dataproc_uuid', dataproc_uuid, rec)
+                setFieldValue('dataproc_location', dataproc_location, rec)
+
+                // append to aggData
+                aggData.push(rec)
+            } else {
+                aggData[idx].cost += cost
+                aggData[idx].start_time = new Date(
+                    Math.min(usageStartDate.getTime(), aggData[idx].start_time.getTime())
+                )
+                aggData[idx].end_time = new Date(
+                    Math.max(usageEndDate.getTime(), aggData[idx].end_time.getTime())
+                )
+            }
+        }
+    })
+
+    return aggData
+}
+
+function prepareDetails(data: any[], key: string) {
+    // aggregate data by key
+    const aggData: any[] = []
+    data.forEach((curr) => {
+        const { cost, topic, sku } = curr
+        const ar_guid = curr['ar-guid']
+        const cromwell_id = curr['cromwell-workflow-id']
+        const idx = aggData.findIndex(
+            (d) => d.key === curr[key] && d.batch_resource === sku.description
+        )
+        if (curr[key] !== undefined && cost >= 0) {
+            // do not include credits, should be filter out at API?
+            if (idx === -1) {
+                aggData.push({
+                    type: key,
+                    key: curr[key],
+                    ar_guid,
+                    cromwell_id,
+                    topic,
+                    cost,
+                    wdl_task_name: key === 'wdl-task-name' ? curr[key] : undefined,
+                    cromwell_sub: key === 'cromwell-sub-workflow-name' ? curr[key] : undefined,
+                    seq_group_id: key === 'seq_group_id' ? curr[key] : undefined,
+                    batch_resource: sku.description,
+                })
+            } else {
+                aggData[idx].cost += cost
+            }
+        }
+    })
+
+    return aggData
+}
+
+const CromwellDataProcGrid: React.FunctionComponent<{
     data: any[]
 }> = ({ data }) => {
-    // prepare aggregated data by ar_guid, batch_id, job_id and coresponding batch_resource
-    const aggArGUIDData: any[] = []
-    data.forEach((curr) => {
-        const { cost, topic, usage_start_time, usage_end_time } = curr
-        const ar_guid = curr['ar-guid']
-        const usageStartDate = new Date(usage_start_time)
-        const usageEndDate = new Date(usage_end_time)
-        const idx = aggArGUIDData.findIndex((d) => d.ar_guid === ar_guid && d.topic === topic)
-        if (cost >= 0) {
-            // do not include credits, should be filter out at API?
-            if (idx === -1) {
-                aggArGUIDData.push({
-                    type: 'ar_guid',
-                    key: ar_guid,
-                    ar_guid,
-                    batch_id: undefined,
-                    job_id: undefined,
-                    topic,
-                    cost,
-                    start_time: usageStartDate,
-                    end_time: usageEndDate,
-                })
-            } else {
-                aggArGUIDData[idx].cost += cost
-                aggArGUIDData[idx].start_time = new Date(
-                    Math.min(usageStartDate.getTime(), aggArGUIDData[idx].start_time.getTime())
-                )
-                aggArGUIDData[idx].end_time = new Date(
-                    Math.max(usageEndDate.getTime(), aggArGUIDData[idx].end_time.getTime())
-                )
-            }
-        }
-    })
-    const aggArGUIDResource: any[] = []
-    data.forEach((curr) => {
-        const { cost, batch_resource } = curr
-        const ar_guid = curr['ar-guid']
-        const idx = aggArGUIDResource.findIndex(
-            (d) => d.ar_guid === ar_guid && d.batch_resource === batch_resource
-        )
-        if (cost >= 0) {
-            // do not include credits, should be filter out at API?
-            if (idx === -1) {
-                aggArGUIDResource.push({
-                    type: 'ar_guid',
-                    key: ar_guid,
-                    ar_guid,
-                    batch_resource,
-                    cost,
-                })
-            } else {
-                aggArGUIDResource[idx].cost += cost
-            }
-        }
-    })
-    const aggBatchData: any[] = []
-    data.forEach((curr) => {
-        const {
-            batch_id,
-            url,
-            topic,
-            namespace,
-            batch_name,
-            cost,
-            usage_start_time,
-            usage_end_time,
-        } = curr
-        const ar_guid = curr['ar-guid']
-        const usageStartDate = new Date(usage_start_time)
-        const usageEndDate = new Date(usage_end_time)
-        const idx = aggBatchData.findIndex(
-            (d) =>
-                d.batch_id === batch_id &&
-                d.batch_name === batch_name &&
-                d.topic === topic &&
-                d.namespace === namespace
-        )
-        if (batch_id !== undefined && cost >= 0) {
-            // do not include credits, should be filter out at API?
-            if (idx === -1) {
-                aggBatchData.push({
-                    type: 'batch_id',
-                    key: batch_id,
-                    ar_guid,
-                    batch_id,
-                    url,
-                    topic,
-                    namespace,
-                    batch_name,
-                    job_id: undefined,
-                    cost,
-                    start_time: usageStartDate,
-                    end_time: usageEndDate,
-                })
-            } else {
-                aggBatchData[idx].cost += cost
-                aggBatchData[idx].start_time = new Date(
-                    Math.min(usageStartDate.getTime(), aggBatchData[idx].start_time.getTime())
-                )
-                aggBatchData[idx].end_time = new Date(
-                    Math.max(usageEndDate.getTime(), aggBatchData[idx].end_time.getTime())
-                )
-            }
-        }
-    })
+    // prepare aggregated row by ar_guid, wdl, sub, seq
+    const aggArGUIDData: any[] = prepareTotalRow(data, 'ar-guid')
+    const aggSubData: any[] = prepareTotalRow(data, 'cromwell-sub-workflow-name')
+    const aggWDLData: any[] = prepareTotalRow(data, 'wdl-task-name')
+    const aggSGData: any[] = prepareTotalRow(data, 'seq_group_id')
 
-    const aggBatchResource: any[] = []
-    data.forEach((curr) => {
-        const { batch_id, batch_resource, topic, namespace, batch_name, cost } = curr
-        const ar_guid = curr['ar-guid']
-        const idx = aggBatchResource.findIndex(
-            (d) =>
-                d.batch_id === batch_id &&
-                d.batch_name === batch_name &&
-                d.batch_resource === batch_resource &&
-                d.topic === topic &&
-                d.namespace === namespace
-        )
-        if (batch_id !== undefined && cost >= 0) {
-            // do not include credits, should be filter out at API?
-            if (idx === -1) {
-                aggBatchResource.push({
-                    type: 'batch_id',
-                    key: batch_id,
-                    ar_guid,
-                    batch_id,
-                    batch_resource,
-                    topic,
-                    namespace,
-                    batch_name,
-                    cost,
-                })
-            } else {
-                aggBatchResource[idx].cost += cost
-            }
-        }
-    })
+    // prepare detailed cost per sku
+    const aggArGUIDDetails: any[] = prepareDetails(data, 'ar-guid')
+    const aggSubDetails: any[] = prepareDetails(data, 'cromwell-sub-workflow-name')
+    const aggWDLDetails: any[] = prepareDetails(data, 'wdl-task-name')
+    const aggSGDetails: any[] = prepareDetails(data, 'seq_group_id')
 
-    const aggBatchJobData: any[] = []
-    data.forEach((curr) => {
-        const { batch_id, url, cost, topic, namespace, job_id, usage_start_time, usage_end_time } =
-            curr
-        const ar_guid = curr['ar-guid']
-        const usageStartDate = new Date(usage_start_time)
-        const usageEndDate = new Date(usage_end_time)
-        const idx = aggBatchJobData.findIndex(
-            (d) =>
-                d.batch_id === batch_id &&
-                d.job_id === job_id &&
-                d.topic === topic &&
-                d.namespace === namespace
-        )
-        if (job_id !== undefined && cost >= 0) {
-            if (idx === -1) {
-                aggBatchJobData.push({
-                    type: 'batch_id/job_id',
-                    key: `${batch_id}/${job_id}`,
-                    batch_id,
-                    job_id,
-                    ar_guid,
-                    url,
-                    topic,
-                    namespace,
-                    cost,
-                    start_time: usageStartDate,
-                    end_time: usageEndDate,
-                })
-            } else {
-                aggBatchJobData[idx].cost += cost
-                aggBatchJobData[idx].start_time = new Date(
-                    Math.min(usageStartDate.getTime(), aggBatchJobData[idx].start_time.getTime())
-                )
-                aggBatchJobData[idx].end_time = new Date(
-                    Math.max(usageEndDate.getTime(), aggBatchJobData[idx].end_time.getTime())
-                )
-            }
-        }
-    })
+    const aggData = [...aggArGUIDData, ...aggWDLData, ...aggSubData, ...aggSGData]
+    const aggResource = [...aggArGUIDDetails, ...aggSubDetails, ...aggWDLDetails, ...aggSGDetails]
 
-    const aggBatchJobResource: any[] = []
-    data.forEach((curr) => {
-        const { batch_id, batch_resource, topic, namespace, cost, job_id, job_name } = curr
-        const ar_guid = curr['ar-guid']
-        const idx = aggBatchJobResource.findIndex(
-            (d) =>
-                d.batch_id === batch_id &&
-                d.job_id === job_id &&
-                d.batch_resource === batch_resource &&
-                d.topic === topic &&
-                d.namespace === namespace
-        )
-        if (batch_id !== undefined && job_id !== undefined && cost >= 0) {
-            if (idx === -1) {
-                aggBatchJobResource.push({
-                    type: 'batch_id/job_id',
-                    key: `${batch_id}/${job_id}`,
-                    batch_id,
-                    job_id,
-                    ar_guid,
-                    batch_resource,
-                    topic,
-                    namespace,
-                    cost,
-                    job_name,
-                })
-            } else {
-                aggBatchJobResource[idx].cost += cost
-            }
-        }
-    })
-
-    const aggData = [...aggArGUIDData, ...aggBatchData, ...aggBatchJobData]
-    const aggResource = [...aggArGUIDResource, ...aggBatchResource, ...aggBatchJobResource]
-
-    // combine data and resource for each ar_guid, batch_id, job_id
+    // combine data and resource for each ar_guid, wdl, sub, seq
     const combinedData = aggData.map((dataItem) => {
         const details = aggResource.filter(
             (resourceItem) =>
@@ -249,18 +153,13 @@ const HailBatchGrid: React.FunctionComponent<{
         }
     }
 
-    const prepareBatchUrl = (url: string, txt: string) => (
-        <a href={`${url}`} rel="noopener noreferrer" target="_blank">
-            {txt}
-        </a>
-    )
-
     const prepareBgColor = (log: any) => {
-        if (log.batch_id === undefined) {
+        if (
+            log.wdl_task_name === undefined &&
+            log.cromwell_sub === undefined &&
+            log.seq_group_id === undefined
+        ) {
             return 'var(--color-border-color)'
-        }
-        if (log.job_id === undefined) {
-            return 'var(--color-border-default)'
         }
         return 'var(--color-bg)'
     }
@@ -269,14 +168,17 @@ const HailBatchGrid: React.FunctionComponent<{
         {
             category: 'job_id',
             title: 'ID',
-            dataMap: (dataItem: any, value: string) => {
-                if (dataItem.batch_id === undefined) {
-                    return `AR GUID: ${dataItem.ar_guid}`
+            dataMap: (dataItem: any, _value: string) => {
+                if (dataItem.wdl_task_name !== undefined) {
+                    return `WDL TASK: ${dataItem.wdl_task_name}`
                 }
-                if (dataItem.job_id === undefined) {
-                    return prepareBatchUrl(dataItem.url, `BATCH ID: ${dataItem.batch_id}`)
+                if (dataItem.cromwell_sub !== undefined) {
+                    return `CROMWELL SUB WORKFLOW : ${dataItem.cromwell_sub}`
                 }
-                return prepareBatchUrl(dataItem.url, `JOB: ${value}`)
+                if (dataItem.seq_group_id !== undefined) {
+                    return `SEQ GROUP : ${dataItem.seq_group_id}`
+                }
+                return `AR GUID: ${dataItem.ar_guid}`
             },
         },
         {
@@ -332,20 +234,40 @@ const HailBatchGrid: React.FunctionComponent<{
 
     const DETAIL_FIELDS: Field[] = [
         {
+            category: 'compute_category',
+            title: 'COMPUTE CATEGORY',
+        },
+        {
+            category: 'creator',
+            title: 'CREATOR',
+        },
+        {
             category: 'topic',
             title: 'TOPIC',
         },
         {
-            category: 'namespace',
-            title: 'NAMESPACE',
+            category: 'cromwell_id',
+            title: 'CROMWELL WORKFLOW ID',
         },
         {
-            category: 'batch_name',
-            title: 'NAME/SCRIPT',
+            category: 'goog_pipelines_worker',
+            title: 'GOOGLE PIPELINES WORKER',
         },
         {
-            category: 'job_name',
-            title: 'NAME',
+            category: 'dataproc_autozone',
+            title: 'DATAPROC AUTOZONE',
+        },
+        {
+            category: 'dataproc_name',
+            title: 'DATAPROC CLUSTER NAME',
+        },
+        {
+            category: 'dataproc_uuid',
+            title: 'DATAPROC CLUSTER UUID',
+        },
+        {
+            category: 'dataproc_location',
+            title: 'DATAPROC LOCATION',
         },
     ]
 
@@ -397,18 +319,12 @@ const HailBatchGrid: React.FunctionComponent<{
             <SUITable.Body>
                 {combinedData
                     .sort((a, b) => {
-                        // Sorts an array of objects first by 'batch_id' and then by 'job_id' in ascending order.
-                        if (a.batch_id < b.batch_id) {
-                            return -1
-                        }
-                        if (a.batch_id > b.batch_id) {
+                        // Sorts an array of objects on cost
+                        if (a.cost < b.cost) {
                             return 1
                         }
-                        if (a.job_id < b.job_id) {
+                        if (a.cost > b.cost) {
                             return -1
-                        }
-                        if (a.job_id > b.job_id) {
-                            return 1
                         }
                         return 0
                     })
@@ -495,4 +411,4 @@ const HailBatchGrid: React.FunctionComponent<{
     )
 }
 
-export default HailBatchGrid
+export default CromwellDataProcGrid
