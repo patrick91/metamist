@@ -60,3 +60,6 @@ web/src/__generated__
 
 # pulumi config files
 Pulumi*.yaml
+
+# Local scratch/analysis file
+__amy_scratch/
