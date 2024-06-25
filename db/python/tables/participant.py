@@ -48,7 +48,7 @@ class ParticipantTable(DbBase):
         skip: int | None = None,
         limit: int | None = None,
         participant_eid_table_alias: str | None = None,
-        group_result_by_id: bool = True
+        group_result_by_id: bool = True,
     ) -> tuple[str, dict[str, Any]]:
         """Construct a participant query"""
         needs_family = False
@@ -89,6 +89,8 @@ class ParticipantTable(DbBase):
                     'id': 's.id',
                     'type': 's.type',
                     'meta': 's.meta',
+                    'sample_root_id': 's.sample_root_id',
+                    'sample_parent_id': 's.sample_parent_id',
                 },
                 exclude=['external_id'],
             )
